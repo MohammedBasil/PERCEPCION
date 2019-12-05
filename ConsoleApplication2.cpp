@@ -24,6 +24,7 @@ int main()
 	double distorsion[5] = { 5.9933687464190685e-02, -2.5927601997166805e-01, 0, 0, 1.4176938948850759e-01 };
 	Mat calib;
 	Mat distor;
+	unsigned t0, t1;
 	Mat homogra;
 	Mat transfor(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));
 	Mat transforgris(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));
@@ -34,9 +35,33 @@ int main()
 		{0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1},
 		{0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1}
 	};
-	int correcto;
-	int correcto2=4;
 
+	int esquina1[4][16] = {
+		{0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1},
+		{0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1},
+		{1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0},
+		{1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}
+	};
+	int matriz [10][16] = {
+		{1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0},
+		{0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0},
+		{0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1},
+		{1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0},
+		{0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0},
+		{0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1},
+		{1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0},
+		{1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0},
+		{1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0},
+		{1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0},
+	};
+	/*0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1
+		1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0
+		0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1
+		1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0 */
+	int correcto=0;
+	int correcto2=4;
+	int id=0;
+	int posicion=0;
 	calib = Mat(3, 3, DataType<double>::type, calibracion);
 	distor = Mat(3, 3, DataType<double>::type, distorsion);
 	int perimetro;
@@ -44,7 +69,8 @@ int main()
 	int arrayp[16];
 	double to;
 	double tf=0;
-	unsigned fps;
+	double fps;
+	int r;
 	vector<Point2d> vector_objetivo;
 	Point2d p1 = Point2d(0, 0);
 	Point2d p2 = Point2d(0, 600);
@@ -89,6 +115,7 @@ int main()
 		namedWindow("umbral2", CV_WINDOW_AUTOSIZE);
 		while (pressedkey != ESCAPE)
 		{
+			t0 = clock();
 			
 			
 			success = capture.read(hola);
@@ -115,24 +142,42 @@ int main()
 						warpPerspective(hola, transfor, homogra, Size(600, 600));
 						cvtColor(transfor, transforgris, CV_BGR2GRAY);
 						threshold(transforgris, transforumbral, 150, 255, THRESH_BINARY);
-						int p = 0;
-						for (int j=0; j<4; j++){
-							
-							for (int x = 0; x < 4; x++,p++) {
-							
-								cout << (int)transforumbral.at<uchar>(150 + 100 * j, 150 + 100 * x) << endl;
-							arrayp[p] = transforumbral.at<uchar>(150 + 100 * j, 150 + 100 * x);
-							}
-						}
-						for (int x = 0; x < 16; x++) {
-							if (arrayp[x] == 255) {
-								arrayp[x] = 1;
-							}
-							cout << (int)arrayp[x] << endl;
+						for (r = 0; r < 4; r++) {
+							for (int n = 0; n < 10; n++) {
+								int p = 0;
+								for (int j = 0; j < 4; j++) {
 
+									for (int x = 0; x < 4; x++, p++) {
+
+
+										arrayp[p] = transforumbral.at<uchar>(150 + 100 * j, 150 + 100 * x);
+									}
+								}
+								for (int x = 0; x < 16; x++) {
+									if (arrayp[x] == 255) {
+										arrayp[x] = 1;
+									}
+
+
+								}
+								correcto = 0;
+								for (int x = 0; x < 16; x++) {
+
+									if (arrayp[x] != matriz[n][x]) correcto = 1;
+
+								}
+								if (correcto == 0) {
+									id = n;
+									posicion = r;
+								}
+
+							}
+							rotate(transforumbral, transforumbral, 0);
+						
 						}
-						correcto = 0;
-						for (int a = 0; a < 4; ++a) {
+						
+						
+						/*for (int a = 0; a < 4; ++a) {
 							
 
 							for (int x = 0; x < 16; x++) {
@@ -140,8 +185,30 @@ int main()
 								if (arrayp[x] != esquina4[a][x]) correcto = 1;
 
 							}
-							if (correcto == 0) correcto2 = a;
+							if (correcto == 0) {
+								correcto2 = a;
+								
+								id = 4;
+							}
 							correcto = 0;
+						}
+						if (id == 0) {
+							for (int a = 0; a < 4; ++a) {
+
+
+								for (int x = 0; x < 16; x++) {
+
+									if (arrayp[x] != esquina1[a][x]) correcto = 1;
+
+								}
+								if (correcto == 0) {
+									correcto2 = a;
+									
+									id = 1;
+								}
+								correcto = 0;
+							}
+
 						}
 
 						
@@ -157,7 +224,7 @@ int main()
 							circle(hola, contor[i][0], 6, Scalar(255, 0, 0), -1); break;
 						default:
 							break;
-						}
+						}*/
 						
 
 
@@ -243,12 +310,14 @@ int main()
 
 				}
 				*/
-			cout << arrayp[0] << arrayp[1] << arrayp[2] << arrayp[3] << endl;
+			//cout << id << endl;
 			imshow("LO1_EO3", hola);
 			//imshow("grises1", grises);
 			imshow("umbral1", umbral);
 			imshow("umbral2", transforumbral);
-			
+			t1 = clock();
+			fps = (1.0 / (double(t1 - t0) / CLOCKS_PER_SEC));
+			cout << fps << endl;
 			pressedkey = waitKey(1);
 			
 		
