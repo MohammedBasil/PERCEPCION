@@ -28,6 +28,14 @@ int main()
 	Mat transfor(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));
 	Mat transforgris(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));
 	Mat transforumbral(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));
+	int esquina4[4][16] = {
+		{1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0},
+		{1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0},
+		{0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1},
+		{0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1}
+	};
+	int correcto;
+	int correcto2=4;
 
 	calib = Mat(3, 3, DataType<double>::type, calibracion);
 	distor = Mat(3, 3, DataType<double>::type, distorsion);
@@ -99,10 +107,10 @@ int main()
 						perimetro = arcLength(contor[i], 1);
 						lado = perimetro / 4;
 						drawContours(hola, contor, i, Scalar(255, 0, 255), 2);
-						circle(hola, contor[i][0], 6, Scalar(255, 0, 0), -1);
+						/*circle(hola, contor[i][0], 6, Scalar(255, 0, 0), -1);
 						circle(hola, contor[i][1], 6, Scalar(255, 0, 0), -1);
 						circle(hola, contor[i][2], 6, Scalar(255, 0, 0), -1);
-						circle(hola, contor[i][3], 6, Scalar(255, 0, 0), -1);
+						circle(hola, contor[i][3], 6, Scalar(255, 0, 0), -1);*/
 						homogra = findHomography(contor[i], vector_objetivo);
 						warpPerspective(hola, transfor, homogra, Size(600, 600));
 						cvtColor(transfor, transforgris, CV_BGR2GRAY);
@@ -112,7 +120,7 @@ int main()
 							
 							for (int x = 0; x < 4; x++,p++) {
 							
-
+								cout << (int)transforumbral.at<uchar>(150 + 100 * j, 150 + 100 * x) << endl;
 							arrayp[p] = transforumbral.at<uchar>(150 + 100 * j, 150 + 100 * x);
 							}
 						}
@@ -120,8 +128,42 @@ int main()
 							if (arrayp[x] == 255) {
 								arrayp[x] = 1;
 							}
+							cout << (int)arrayp[x] << endl;
+
+						}
+						correcto = 0;
+						for (int a = 0; a < 4; ++a) {
+							
+
+							for (int x = 0; x < 16; x++) {
+
+								if (arrayp[x] != esquina4[a][x]) correcto = 1;
+
+							}
+							if (correcto == 0) correcto2 = a;
+							correcto = 0;
 						}
 
+						
+						
+						switch (correcto2)
+						{case 0: 
+							circle(hola, contor[i][3], 6, Scalar(255, 0, 0), -1); break;
+						case 1:
+							circle(hola, contor[i][2], 6, Scalar(255, 0, 0), -1); break;
+						case 2:
+							circle(hola, contor[i][1], 6, Scalar(255, 0, 0), -1); break;
+						case 3:
+							circle(hola, contor[i][0], 6, Scalar(255, 0, 0), -1); break;
+						default:
+							break;
+						}
+						
+
+
+
+						
+						
 
 
 					}
@@ -201,7 +243,7 @@ int main()
 
 				}
 				*/
-				
+			cout << arrayp[0] << arrayp[1] << arrayp[2] << arrayp[3] << endl;
 			imshow("LO1_EO3", hola);
 			//imshow("grises1", grises);
 			imshow("umbral1", umbral);
