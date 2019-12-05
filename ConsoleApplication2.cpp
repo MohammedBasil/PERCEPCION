@@ -26,13 +26,14 @@ int main()
 	Mat distor;
 	Mat homogra;
 	Mat transfor(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));
-	Mat transforgris;
-	Mat transforumbral;
+	Mat transforgris(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));
+	Mat transforumbral(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));
 
 	calib = Mat(3, 3, DataType<double>::type, calibracion);
 	distor = Mat(3, 3, DataType<double>::type, distorsion);
 	int perimetro;
 	int lado;
+	int arrayp[16];
 	double to;
 	double tf=0;
 	unsigned fps;
@@ -41,10 +42,10 @@ int main()
 	Point2d p2 = Point2d(0, 600);
 	Point2d p3 = Point2d(600, 0);
 	Point2d p4 = Point2d(600, 600);
-	vector_objetivo.push_back(p1);
-	vector_objetivo.push_back(p2);
 	vector_objetivo.push_back(p3);
 	vector_objetivo.push_back(p4);
+	vector_objetivo.push_back(p2);
+	vector_objetivo.push_back(p1);
 
 	/*int diagonal1x[6];
 	int diagonal2x[6];
@@ -77,6 +78,7 @@ int main()
 		namedWindow("L01_E03", CV_WINDOW_AUTOSIZE);
 		namedWindow("grises1", CV_WINDOW_AUTOSIZE);
 		namedWindow("umbral1", CV_WINDOW_AUTOSIZE);
+		namedWindow("umbral2", CV_WINDOW_AUTOSIZE);
 		while (pressedkey != ESCAPE)
 		{
 			
@@ -105,6 +107,20 @@ int main()
 						warpPerspective(hola, transfor, homogra, Size(600, 600));
 						cvtColor(transfor, transforgris, CV_BGR2GRAY);
 						threshold(transforgris, transforumbral, 150, 255, THRESH_BINARY);
+						int p = 0;
+						for (int j=0; j<4; j++){
+							
+							for (int x = 0; x < 4; x++,p++) {
+							
+
+							arrayp[p] = transforumbral.at<uchar>(150 + 100 * j, 150 + 100 * x);
+							}
+						}
+						for (int x = 0; x < 16; x++) {
+							if (arrayp[x] == 255) {
+								arrayp[x] = 1;
+							}
+						}
 
 
 
@@ -189,6 +205,7 @@ int main()
 			imshow("LO1_EO3", hola);
 			//imshow("grises1", grises);
 			imshow("umbral1", umbral);
+			imshow("umbral2", transforumbral);
 			
 			pressedkey = waitKey(1);
 			
