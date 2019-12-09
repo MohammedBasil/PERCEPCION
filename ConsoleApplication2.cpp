@@ -15,6 +15,7 @@ using namespace std;
 using namespace cv;
 
 #define ESCAPE 27
+#define SPACE 32
 
 int main()
 {
@@ -22,7 +23,7 @@ int main()
 	Mat hola;									//matriz original en la que se dibuja todo
 	Mat grises;									//matriz hola en blanco y negro
 	Mat umbral;									// matriz de grises umbralizada 
-	int a = 1;                                  // variable para combio de cubo a piramide
+	bool f;                                  // variable para combio de cubo a piramide
 	double calibracion[9] = { 4.5930409526695178e+02, 0, 320, 0, 4.5930409526695178e+02, 240, 0, 0, 1 };  //array de calibracion de la camara
 	double distorsion[5] = { -1.1559474367321274e-01, 1.6127813266167305e-02, 0, 0, 2.4356166478716794e-02 };  //array de distorsion de la camara
 	Mat calib = Mat(3, 3, DataType<double>::type, calibracion);					// conversión del array de calibración a una matriz 3x3
@@ -33,7 +34,7 @@ int main()
 	Mat transfor(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));                    //matriz 600x600 en la que aplicamos la transformacion 2 d al contorno
 	Mat transforgris(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));				//matriz 600x600 en la que aplicamos escala de grises
 	Mat transforumbral(Size(600, 600), CV_16SC1, Scalar(0, 0, 0));				//matriz 600x600 en la que aplicamos umbralización
-	
+
 
 	int matriz[10][16] = {                                                      //matriz que almacena codificado todos los arucos 
 		{1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0},
@@ -55,7 +56,7 @@ int main()
 	int perimetro;																// variable del perimetro del aruco detectado
 	int lado;																	// lado del aruco detectado
 	int arrayp[16];																// array que almacena el identificador del aruco de la matriz 600x600
-	
+
 	double fps;																	//variable usada para contar fps
 	int r;																		//variable que tiene el fin de contar las rotaciones
 	vector<Point2d> vector_objetivo;											//vector que tiene los puntos de las esquinas de la matriz 600x600
@@ -124,7 +125,7 @@ int main()
 	char pressedkey = 0;
 
 	bool success;
-
+	f = 1;
 	if (!capture.isOpened())
 	{
 		cout << "Error " << endl;
@@ -138,7 +139,6 @@ int main()
 		{
 			t0 = clock();																//comienzo de la cuenta para fps
 
-
 			success = capture.read(hola);
 			if (success == false) {
 				cout << "no se puede leer" << endl;
@@ -148,16 +148,16 @@ int main()
 			//Canny(grises, cannyImg, 100, 300);
 			threshold(grises, umbral, 100, 255, THRESH_BINARY);							//umbralización de la matriz de grises
 			findContours(umbral, contor, RETR_LIST, CHAIN_APPROX_NONE);                 //encontramos contornos en la matriz umbral
+
 			for (int i = 0; i < contor.size(); i++) {									//bucle en lo que tenemos todos los contornos detectados
-				approxPolyDP(contor[i], contour, 0.1 * arcLength(contor[i], 1), 1);     //filtramos los contornos por figuras poligonales
+				approxPolyDP(contor[i], contour, 0.1 * arcLength(contor[i], 1)*0.1, 1);     //filtramos los contornos por figuras poligonales
 				if (contour.size() == 4) {												// condición que tenga 4 lados
 					if (contourArea(contour, 1) > 1000) {								// filtrado del contorno por el area
 						Mat(contour).convertTo(contour2f, Mat(contour2f).type());
-						perimetro = arcLength(contour, 1);								
+						perimetro = arcLength(contour, 1);
 						lado = perimetro / 4;
 						drawContours(hola, contor, i, Scalar(255, 0, 255), 2);			//dibujamos los contornos resultantes en la matriz hola
 						homogra = findHomography(contour, vector_objetivo);				//guardamos la metriz de transformacion de los contornos a vector objetivo
-						inversa= findHomography(vector_objetivo, contour);
 						warpPerspective(hola, transfor, homogra, Size(600, 600));       //pasamos la imagen del contorno a 2d en tranfor
 						cvtColor(transfor, transforgris, CV_BGR2GRAY);					// conversión a grises de transfor
 						threshold(transforgris, transforumbral, 150, 255, THRESH_BINARY);  //umbralización de transforgrises
@@ -183,28 +183,28 @@ int main()
 								if (correcto == 0) {									// si coincide la orientación y el número del aruco entra aquí
 									id = n;												// se asigna el id al número del aruco
 									posicion = r;										// se asigna pa posicion al número de rotación del aruco
-									solvePnP(vector_objetivo_3d, contour2f, calib, distor, rvec, tvec);
-									
+									solvePnP(vector_objetivo_3d, contour2f, calib, distor, rvec, tvec); // obtenemos la representación espacial. Obtenemos las matrices de rotación y traslación para usarlos en project points.
+
 									string ids;											//creación de variable auxiliar ya que puttext no permite enteros
 									ids.push_back(id + '0');							// se guarda id en el string
 
-									if (a == 1) {
-										projectPoints(vector_proy_3d_pir, rvec, tvec, calib, distor, projectedPoints);
-										line(hola, contour[0], projectedPoints[0], Scalar(255, 0, 255), 2);
+									if (f) { // si f es 1 dibujamos la pirámide
+										projectPoints(vector_proy_3d_pir, rvec, tvec, calib, distor, projectedPoints); // Obtenemos las proyecciones de los puntos del cubo en el espacio
+										line(hola, contour[0], projectedPoints[0], Scalar(255, 0, 255), 2); // dibujamos las aristas de la pirámide
 										line(hola, contour[1], projectedPoints[0], Scalar(255, 0, 255), 2);
 										line(hola, contour[2], projectedPoints[0], Scalar(255, 0, 255), 2);
 										line(hola, contour[3], projectedPoints[0], Scalar(255, 0, 255), 2);
 										circle(hola, projectedPoints[5], 4, Scalar(255, 0, 0), -1);
 
-											putText(hola, ids, projectedPoints[5], FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255)); //imprimimos en hola los id
+										putText(hola, ids, projectedPoints[5], FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255)); //imprimimos en hola en el centro de cada aruco el id correspondiente
 
 
 
-										
+
 									}
 									else {
-										projectPoints(vector_proy_3d, rvec, tvec, calib, distor, projectedPoints);
-										line(hola, contour[0], projectedPoints[0], Scalar(255, 0, 255), 2);
+										projectPoints(vector_proy_3d, rvec, tvec, calib, distor, projectedPoints);// Obtenemos las proyecciones de los puntos del cubo en el espacio
+										line(hola, contour[0], projectedPoints[0], Scalar(255, 0, 255), 2); // dibujamos las aristas del cubo
 										line(hola, contour[1], projectedPoints[1], Scalar(255, 0, 255), 2);
 										line(hola, contour[2], projectedPoints[2], Scalar(255, 0, 255), 2);
 										line(hola, contour[3], projectedPoints[3], Scalar(255, 0, 255), 2);
@@ -212,9 +212,9 @@ int main()
 										line(hola, projectedPoints[1], projectedPoints[2], Scalar(255, 0, 255), 2);
 										line(hola, projectedPoints[2], projectedPoints[3], Scalar(255, 0, 255), 2);
 										line(hola, projectedPoints[3], projectedPoints[0], Scalar(255, 0, 255), 2);
-										
 
-										putText(hola, ids, projectedPoints[5], FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255));
+
+										putText(hola, ids, projectedPoints[4], FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255));
 									}
 
 								}
@@ -224,8 +224,8 @@ int main()
 							rotate(transforumbral, transforumbral, 0);  //rota la matriz transforumbral 90 grados
 
 						}
-						
-						
+
+
 					}
 
 
@@ -233,7 +233,7 @@ int main()
 
 
 			}
-			
+
 
 			//cout << id << endl;
 			imshow("LO1_EO3", hola);
@@ -244,6 +244,10 @@ int main()
 			fps = (1.0 / (double(t1 - t0) / CLOCKS_PER_SEC));	    //se restan los 2 tiempos, se divide entre los ciclos por segundo y 1 entre eso son los fps
 			//cout << fps << endl;
 			pressedkey = waitKey(1);
+			if (pressedkey == 'd') {
+				f = !f;
+			}
+			//cout << pressedkey << endl;
 
 
 		}
